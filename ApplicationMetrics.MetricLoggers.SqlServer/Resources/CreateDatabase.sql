@@ -1,11 +1,6 @@
-﻿-- TODO
-
+﻿
 -- TODO: Think about what are the right indices for instance tables
 --   Should maybe be compound on eventtime and then category/metric
--- Can DB name be provided as a parameter
--- Problem may be that all statements would need to be run as dynamic SQL :(
-
-
 
 
 --------------------------------------------------------------------------------

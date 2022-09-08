@@ -165,7 +165,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
 
-            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server."));
+            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(1, e.InnerExceptions.Count);
             var innerException = e.InnerExceptions[0];
             Assert.That(innerException.Message, Does.StartWith("An error occurred writing count metrics to SQL Server."));
@@ -185,7 +185,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
 
-            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server."));
+            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(1, e.InnerExceptions.Count);
             var innerException = e.InnerExceptions[0];
             Assert.That(innerException.Message, Does.StartWith("An error occurred writing amount metrics to SQL Server."));
@@ -205,7 +205,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
 
-            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server."));
+            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(1, e.InnerExceptions.Count);
             var innerException = e.InnerExceptions[0];
             Assert.That(innerException.Message, Does.StartWith("An error occurred writing status metrics to SQL Server."));
@@ -225,7 +225,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
 
-            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server."));
+            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(1, e.InnerExceptions.Count);
             var innerException = e.InnerExceptions[0];
             Assert.That(innerException.Message, Does.StartWith("An error occurred writing interval metrics to SQL Server."));
@@ -248,7 +248,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             {
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
-            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server."));
+            Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(4, e.InnerExceptions.Count);
             var allInnerExceptions = new List<Exception>(e.InnerExceptions);
             allInnerExceptions.Sort(delegate (Exception x, Exception y)

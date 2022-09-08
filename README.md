@@ -1,6 +1,7 @@
 ApplicationMetrics.MetricLoggers.SqlServer
 ---
-ApplicationMetrics provides simple interfaces and classes to allow capturing metric and instrumentation information from a client application.  It was designed with the following goals...
+An implementation of an [ApplicationMetrics](https://github.com/alastairwyse/ApplicationMetrics) [metric logger](https://github.com/alastairwyse/ApplicationMetrics/blob/master/ApplicationMetrics/IMetricLogger.cs) which writes metrics and instrumentation information to a Microsoft SQL Server database.
+
 
 1. Provide interfaces which can be injected into client classes, and provide simple methods for logging metrics from these classes.
 2. To ensure that details of how the metrics are stored and displayed is hidden behind the interfaces
@@ -142,7 +143,7 @@ MessagesSentPerSecond: 2.41545893719806
 ```
 
 #### Links
-The documentation below was written for version 1.* of ApplicationMetrics.  Minor implementation details may have changed in versions 2.0.0 and above, however the basic principles and use cases documented are still valid.
+The documentation below was written for version 1.* of ApplicationMetrics.  Minor implementation details may have changed in versions 2.0.0 and above, however the basic principles and use cases documented are still valid.  Note also that this documentation demonstrates the older ['non-interleaved'](https://github.com/alastairwyse/ApplicationMetrics#interleaved-interval-metrics) method of logging interval metrics.
 
 Full documentation for the project...<br>
 [http://www.alastairwyse.net/methodinvocationremoting/application-metrics.html](http://www.alastairwyse.net/methodinvocationremoting/application-metrics.html)
@@ -158,47 +159,9 @@ A detailed sample implementation...<br>
     <td><b>Changes</b></td>
   </tr>
   <tr>
-    <td valign="top">4.0.0</td>
-    <td>  
-      Moved the 'Amount' property/parameter on the AmountMetric class and the 'Value' property/parameter on the StatusMetric class to be parameters of the Add() and Set() methods (respectively) on the IMetricLogger interface.  This is a fairly fundamental breaking change, but necessary as it creates a clear separation between the definition of the metrics (in subclasses of AmountMetric and StatusMetric),  and instances of the metrics (created via calls to IMetricLogger, and stored in instances of classes AmountMetricEventInstance and StatusMetricEventInstance).
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">3.0.0</td>
+    <td valign="top">1.0.0</td>
     <td>
-      MetricLoggerBuffer Process*MetricEvents() methods signatures changed to pass a collection of metric event instances (rather than single metric event instance) to allow bulk transfer to external systems and/or storage.<br />
-      MetricLoggerBuffer DequeueAndProcess*MetricEvents() methods updated to move events to temporary queue via reference swap rather than moving of individual items for better performance.<br />
-      WorkerThreadBufferProcessorBase Notify*MetricEventBuffered() and Notify*MetricEventBufferCleared() methods use the Interlocked class to update queue item counts to prevent compiler instruction reordering.<br />
-      Worker thread exception handling re-written to properly catch and re-throw exceptions on subsequent calls to main thread methods.<br />
-      Removed *LoggerImplementation classes.<br />
-      MetricAggregateContainer* classes made nested classes of MetricAggregateLogger.<br />
-      MetricEventInstance* classes made nested classes of MetricLoggerBuffer.<br />
-      MetricTotalContainer* classes made nested of MetricLoggerStorer.<br />
-      IMetricLogger interface moved to ApplicationMetrics namespace.<br />
-      General re-write of and improvement to unit tests.<br />
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">2.0.0</td>
-    <td>
-      Migrated to .NET Standard.<br />
-      Removed MicrosoftAccessMetricLogger class.<br />
-      PerformanceCounterMetricLogger class moved to separate ApplicationMetrics.MetricLoggers.WindowsPerformanceCounter project.<br />
-      MetricLoggerBuffer enhanced to use Stopwatch class for greater accuracy of metrics.<br />
-      Change to LoopingWorkerThreadBufferProcessor class constructor parameters.<br />
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">1.5.0.0</td>
-    <td>
-      MetricLoggerBuffer class updated to implement IDisposable, and unhook buffer processed event handlers on dispose.<br />
-      Classes deriving from MetricLoggerBuffer updated to implement IDisposable.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">1.4.0.0</td>
-    <td>
-      Initial version forked from the <a href="http://www.alastairwyse.net/methodinvocationremoting/">Method Invocation Remoting</a> project.
+      Initial release.
     </td>
   </tr>
 </table>

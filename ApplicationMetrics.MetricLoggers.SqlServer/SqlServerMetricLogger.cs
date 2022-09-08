@@ -133,7 +133,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         {
             if (workerThreadExceptions.Count > 0)
             {
-                throw new AggregateException("One or more exceptions occurred on worker threads whilst whilst writing metrics to SQL Server.", workerThreadExceptions);
+                throw new AggregateException("One or more exceptions occurred on worker threads whilst writing metrics to SQL Server.", workerThreadExceptions);
             }
             parallelProcessCompletedSignal.Reset();
             // Allow the other parallel calls to SQL Server on worker threads to start
@@ -171,7 +171,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="amountMetricEvents">The amount metric events to process.</param>
         protected override void ProcessAmountMetricEvents(Queue<AmountMetricEventInstance> amountMetricEvents)
         {
-            Task theTask = Task.Run(() =>
+            Task.Run(() =>
             {
                 // Wait for the 'first' Process*MetricEvents() to reset the complete signal
                 parallelProcessStartSignal.WaitOne();
@@ -213,7 +213,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="statusMetricEvents">The status metric events to process.</param>
         protected override void ProcessStatusMetricEvents(Queue<StatusMetricEventInstance> statusMetricEvents)
         {
-            Task theTask = Task.Run(() =>
+            Task.Run(() =>
             {
                 // Wait for the 'first' Process*MetricEvents() to reset the complete signal
                 parallelProcessStartSignal.WaitOne();
