@@ -11,6 +11,10 @@
     <DocumentationFile>C:\Development\C#\ApplicationMetrics.MetricLoggers.SqlServer\ApplicationMetrics.MetricLoggers.SqlServer\ApplicationMetrics.MetricLoggers.SqlServer.xml</DocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>C:\Development\C#\ApplicationMetrics.MetricLoggers.SqlServer\ApplicationMetrics.MetricLoggers.SqlServer\ApplicationMetrics.MetricLoggers.SqlServer.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ApplicationMetrics" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.0" />
