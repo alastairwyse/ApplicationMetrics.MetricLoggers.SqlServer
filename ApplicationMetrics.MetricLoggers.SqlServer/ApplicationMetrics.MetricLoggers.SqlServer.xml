@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ApplicationMetrics.MetricLoggers.SqlServer</name>
+    </assembly>
+    <members>
+        <member name="T:ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper">
+            <summary>
+            A wrapper interface around methods which execute stored procedures in SQL server, allowing those methods to be mocked in unit tests.
+            </summary>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper.Execute(System.String,System.Collections.Generic.IEnumerable{Microsoft.Data.SqlClient.SqlParameter})">
+            <summary>
+            Executes a stored procedure which does not return a result set.
+            </summary>
+            <param name="procedureName">The name of the stored procedure.</param>
+            <param name="parameters">The parameters to pass to the stored procedure.</param>
+        </member>
+        <member name="T:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger">
+            <summary>
+            Writes metric events to a Microsoft SQL Server database.
+            </summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.category">
+            <summary>The category to log all metrics under.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.connectionString">
+            <summary>The string to use to connect to the SQL Server database.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.retryCount">
+            <summary>The number of times an operation against the SQL Server database should be retried in the case of execution failure.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.retryInterval">
+            <summary>The time in seconds between operation retries.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.sqlRetryLogicOption">
+            <summary>The retry logic to use when connecting to and executing against the SQL Server database.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.sqlServerTransientErrorNumbers">
+            <summary>A set of SQL Server database engine error numbers which denote a transient fault.</summary>
+            <see href="https://docs.microsoft.com/en-us/sql/relational-databases/errors-events/database-engine-events-and-errors?view=sql-server-ver16"/>
+            <see href="https://docs.microsoft.com/en-us/azure/azure-sql/database/troubleshoot-common-errors-issues?view=azuresql"/>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.parallelProcessStartSignal">
+            <summary>Signal that is set by the designated first Process*MetricEvents() method is called.  Allows that method to properly initialize object state before the other methods call SQL server.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.parallelProcessCompletedSignal">
+            <summary>Signal that is waited on by the designated last Process*MetricEvents() method before returning.  Allows that method to ensure that all the other methods have been called and completed before control is returned to the base class DequeueAndProcessMetricEvents() method.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.workerThreadExceptions">
+            <summary>Holds any exceptions which are thrown on worker threads.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.storedProcedureExecutor">
+            <summary>Wraps calls to execute stored procedures so that they can be mocked in unit tests.</summary>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean)">
+            <summary>
+            Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
+            </summary>
+            <param name="category">The category to log all metrics under.</param>
+            <param name="connectionString">The string to use to connect to the SQL Server database.</param>
+            <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
+            <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,StandardAbstraction.IDateTime,StandardAbstraction.IStopwatch,ApplicationMetrics.MetricLoggers.IGuidProvider,ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper)">
+            <summary>
+            Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
+            </summary>
+            <param name="category">The category to log all metrics under.</param>
+            <param name="connectionString">The string to use to connect to the SQL Server database.</param>
+            <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
+            <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+            <param name="dateTime">A test (mock) <see cref="T:System.DateTime"/> object.</param>
+            <param name="stopWatch">A test (mock) <see cref="T:StandardAbstraction.Stopwatch"/> object.</param>
+            <param name="guidProvider">A test (mock) <see cref="T:ApplicationMetrics.MetricLoggers.IGuidProvider"/> object.</param>
+            <param name="storedProcedureExecutor">A test (mock) <see cref="T:ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper"/> object.</param>
+            <remarks>This constructor is included to facilitate unit testing.</remarks>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessCountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.CountMetricEventInstance})">
+            <summary>
+            Writes logged count metric events to SQL Server.
+            </summary>
+            <param name="countMetricEvents">The count metric events to process.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessAmountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.AmountMetricEventInstance})">
+            <summary>
+            Writes logged amount metric events to SQL Server.
+            </summary>
+            <param name="amountMetricEvents">The amount metric events to process.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessStatusMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.StatusMetricEventInstance})">
+            <summary>
+            Writes logged status metric events to SQL Server.
+            </summary>
+            <param name="statusMetricEvents">The status metric events to process.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessIntervalMetricEvents(System.Collections.Generic.Queue{System.Tuple{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.IntervalMetricEventInstance,System.Int64}})">
+            <summary>
+            Writes logged interval metric events to SQL Server.
+            </summary>
+            <param name="intervalMetricEventsAndDurations">The interval metric events and corresponding durations of the events (in milliseconds) to process.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.GenerateSqlServerTransientErrorNumbers">
+            <summary>
+            Returns a list of SQL Server error numbers which indicate errors which are transient (i.e. could be recovered from after retry).
+            </summary>
+            <returns>The list of SQL Server error numbers.</returns>
+            <remarks>See <see href="https://docs.microsoft.com/en-us/azure/azure-sql/database/troubleshoot-common-errors-issues?view=azuresql">Troubleshooting connectivity issues and other errors with Azure SQL Database and Azure SQL Managed Instance</see></remarks> 
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ValidateAndInitialiseConstructorParameters(System.String,System.String,System.Int32,System.Int32)">
+            <summary>
+            Common method to validate and set/initialise parameters passed to the constructor.
+            </summary>
+            <param name="category">The category to log all metrics under.</param>
+            <param name="connectionString">The string to use to connect to the SQL Server database.</param>
+            <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
+            <param name="retryInterval">The time in seconds between operation retries.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.CreateAndPopulateStagingTableAndCallStoredProcedure``2(System.Collections.Generic.Queue{``0},System.Data.DataColumn,System.Action{System.Data.DataRow,``0},System.String,System.String)">
+            <summary>
+            Populates the specified staging data table with metric events, before calling the specified stored procedure and passing the staging table as a parameter.
+            </summary>
+            <typeparam name="TMetricEventInstance">The type of metric event instances being added to the staging table and passed to the stored procedure.</typeparam>
+            <typeparam name="TMetricEvent">The type of metrics represented by the event instances.</typeparam>
+            <param name="metricEventInstances">The metric event instances to add to the staging table.</param>
+            <param name="metricValueColumn">A column definition for holding the 'value' of each subclass of <see cref="T:ApplicationMetrics.MetricBase"/>, e.g. <see cref="T:ApplicationMetrics.AmountMetric"/> 'Amount' or <see cref="T:ApplicationMetrics.StatusMetric"/> 'Value' properties.  Should be set null if the subclass of <see cref="T:ApplicationMetrics.MetricBase"/> does not contain a 'value' column (e.g. in the case of <see cref="T:ApplicationMetrics.CountMetric"/>).</param>
+            <param name="addToDataRowAction">An action which adds additional fields to a row of the staging table.  Accepts two parameters: The row to add the fields to, and the metric event instance being added to the row.</param>
+            <param name="storedProcedureName">The name of the stored procedure to call.</param>
+            <param name="stagingTableParameterName">The name of the stored procedure parameter holding the staging table.</param>
+            <remarks>Parameter 'addToDataRowAction' is included to allowing adding properties that are specific to each subclass of <see cref="T:ApplicationMetrics.MetricBase"/>, e.g. <see cref="T:ApplicationMetrics.AmountMetric"/> 'Amount' or <see cref="T:ApplicationMetrics.StatusMetric"/> 'Value' properties.</remarks>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.PopulateStagingTableAndCallStoredProcedure``2(System.Data.DataTable,System.Collections.Generic.Queue{``0},System.Action{System.Data.DataRow,``0},System.String,System.String)">
+            <summary>
+            Populates the specified staging data table with metric events, before calling the specified stored procedure and passing the staging table as a parameter.
+            </summary>
+            <typeparam name="TMetricEventInstance">The type of metric event instances being added to the staging table and passed to the stored procedure.</typeparam>
+            <typeparam name="TMetricEvent">The type of metrics represented by the event instances.</typeparam>
+            <param name="stagingTable">The staging table to pass to the stored procedure.</param>
+            <param name="metricEventInstances">The metric event instances to add to the staging table.</param>
+            <param name="addToDataRowAction">An action which adds additional fields to a row of the staging table.  Accepts two parameters: The row to add the fields to, and the metric event instance being added to the row.</param>
+            <param name="storedProcedureName">The name of the stored procedure to call.</param>
+            <param name="stagingTableParameterName">The name of the stored procedure parameter holding the staging table.</param>
+            <remarks>Parameter 'addToDataRowAction' is included to allowing adding properties that are specific to each subclass of <see cref="T:ApplicationMetrics.MetricBase"/>, e.g. <see cref="T:ApplicationMetrics.AmountMetric"/> 'Amount' or <see cref="T:ApplicationMetrics.StatusMetric"/> 'Value' properties.</remarks>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ExecuteStoredProcedure(System.String,System.Collections.Generic.IEnumerable{Microsoft.Data.SqlClient.SqlParameter})">
+            <summary>
+            Attempts to execute a stored procedure which does not return a result set.
+            </summary>
+            <param name="procedureName">The name of the stored procedure.</param>
+            <param name="parameters">The parameters to pass to the stored procedure.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.CreateSqlParameterWithValue(System.String,System.Data.SqlDbType,System.Object)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Data.SqlClient.SqlParameter" />.
+            </summary>
+            <param name="parameterName">The name of the parameter.</param>
+            <param name="parameterType">The type of the parameter.</param>
+            <param name="parameterValue">The value of the parameter.</param>
+            <returns>The created parameter.</returns>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.Dispose(System.Boolean)">
+            <summary>
+            Provides a method to free unmanaged resources used by this class.
+            </summary>
+            <param name="disposing">Whether the method is being called as part of an explicit Dispose routine, and hence whether managed resources should also be freed.</param>
+        </member>
+        <member name="T:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.StoredProcedureExecutionWrapper">
+            <summary>
+            Implementation of IStoredProcedureExecutionWrapper which allows executing stored procedures through a configurable <see cref="T:System.Action"/>.
+            </summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.StoredProcedureExecutionWrapper.executeAction">
+            <summary>An action which executed the stored procedure.</summary>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.StoredProcedureExecutionWrapper.#ctor(System.Action{System.String,System.Collections.Generic.IEnumerable{Microsoft.Data.SqlClient.SqlParameter}})">
+            <summary>
+            Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger+StoredProcedureExecutionWrapper class.
+            </summary>
+            <param name="executeAction"></param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.StoredProcedureExecutionWrapper.Execute(System.String,System.Collections.Generic.IEnumerable{Microsoft.Data.SqlClient.SqlParameter})">
+            <summary>
+            Executes a stored procedure which does not return a result set.
+            </summary>
+            <param name="procedureName">The name of the stored procedure.</param>
+            <param name="parameters">The parameters to pass to the stored procedure.</param>
+        </member>
+    </members>
+</doc>

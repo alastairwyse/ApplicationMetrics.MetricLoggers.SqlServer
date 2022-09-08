@@ -25,6 +25,7 @@
   </metadata>
   <files>
     <file src=".\ApplicationMetrics.MetricLoggers.SqlServer\bin\Release\netstandard2.0\ApplicationMetrics.MetricLoggers.SqlServer.dll" target="lib\netstandard2.0\ApplicationMetrics.MetricLoggers.SqlServer.dll" />
+    <file src=".\ApplicationMetrics.MetricLoggers.SqlServer\bin\Release\netstandard2.0\ApplicationMetrics.MetricLoggers.SqlServer.xml" target="lib\netstandard2.0\ApplicationMetrics.MetricLoggers.SqlServer.xml" />
     <file src=".\Resources\ApplicationMetrics.png" target="images\" />
   </files>
 </package>
