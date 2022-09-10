@@ -6,7 +6,7 @@ An implementation of an [ApplicationMetrics](https://github.com/alastairwyse/App
 #### Setup
 
 ##### 1) Create the Database and Objects
-Run the [CreateDatabase.sql](https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/blob/master/ApplicationMetrics.MetricLoggers.SqlServer/Resources/CreateDatabase.sql) scripts against a SQL Server instance to create the 'ApplicationMetrics' database and objects to store the metrics.  The 'CREATE DATABASE' statement needs to be run separately, before the remainder of the script.  The name of the database can be changed via a find/replace operation in the script (replacing all instances of 'ApplicationMetrics' with a desired database name).  Alternatively, the objects can be created in an existing database.  In any case, the 'InitialCatalog' component of the connection string passed to the SqlServerMetricLogger class should be set to the matching database name.
+Run the [CreateDatabase.sql](https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/blob/master/ApplicationMetrics.MetricLoggers.SqlServer/Resources/CreateDatabase.sql) script against a SQL Server instance to create the 'ApplicationMetrics' database and objects to store the metrics.  The 'CREATE DATABASE' statement needs to be run separately, before the remainder of the script.  The name of the database can be changed via a find/replace operation on the script (replacing all instances of 'ApplicationMetrics' with a desired database name).  Alternatively, the objects can be created in an existing database.  In any case, the 'InitialCatalog' component of the connection string passed to the SqlServerMetricLogger class should be set to the matching database name.
 
 ##### 2) Setup and Call the SqlServerMetricLogger Class
 
@@ -40,17 +40,19 @@ SqlServerMetricLogger accepts the following constructor parameters...
 
 | Parameter Name | Description |
 | -------------- | ----------- |
-| category | The category to log the metrics under.  The ability to specify a category can allow instances of the same metrics to be logged, but distinguished from each other... e.g. in the case of a multi-threaded application, the category could be set to reflect an individual thread. |
+| category | The category to log the metrics under.  The ability to specify a category allows instances of the same metrics to be logged, but also distinguished from each other... e.g. in the case of a multi-threaded application, the category could be set to reflect an individual thread. |
 | connectionString | The connection string to connect to SQL Server. |
 | retryCount | The number of times an operation against the database should be retried in the case of execution failure. |
 | retryInterval | The time in seconds between operation retries. |
-| bufferProcessingStrategy | An object implementing IBufferProcessingStrategy which decides when the buffers holding logged metric events should be flushed (and be written to SQL Server). |
+| bufferProcessingStrategy | An object implementing [IBufferProcessingStrategy](https://github.com/alastairwyse/ApplicationMetrics/blob/master/ApplicationMetrics.MetricLoggers/IBufferProcessingStrategy.cs) which decides when the buffers holding logged metric events should be flushed (and be written to SQL Server). |
 | intervalMetricChecking | Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  This parameter is ignored when the the SqlServerMetricLogger operates in ['interleaved'](https://github.com/alastairwyse/ApplicationMetrics#interleaved-interval-metrics) mode. |
 
 Retries are implemented using the [configurable retry logic](https://docs.microsoft.com/en-us/sql/connect/ado-net/configurable-retry-logic-sqlclient-introduction?view=sql-server-ver16) functionality in the Microsoft.Data.SqlClient library.
 
 ##### 3) Viewing and Querying Logged Metrics
 A view is available for each of the 4 different types of metrics (e.g. 'CountMetricInstancesView', 'AmountMetricInstancesView', etc...).  Additionally a view which consolidates all logged metrics ('AllMetricInstancesView') can be queried.  Standard SQL can be used to filter and aggregate the contents of these views.
+
+A sample of the contents of 'AllMetricInstancesView' appears below...
 
 ![AllMetricInstancesView contents example](http://alastairwyse.net/applicationmetrics/images/allmetricinstancesview-example.png)
 
