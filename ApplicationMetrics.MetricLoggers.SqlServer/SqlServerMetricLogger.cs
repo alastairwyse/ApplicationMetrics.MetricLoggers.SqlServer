@@ -30,13 +30,6 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
     /// </summary>
     public class SqlServerMetricLogger : MetricLoggerBuffer, IDisposable
     {
-        // TODO:
-        // Redo actual test to SQL server, clearing out all existing tables first.
-        //   If possible just ensure that description is on in staging table for first instance (can propbably just check with a Console.WriteLine())
-        //   CAPTURE OUTPUT for doco
-        //   Create a git repo from existing directory...
-        //     https://kbroman.org/github_tutorial/pages/init.html
-
         // In the base MetricLoggerBuffer class, methods Process*MetricEvents() are called synchronously in sequence.
         // However since in this implementation the different metric types are written to different tables in SQL Server, we can improve performance by executing the work
         //   of each of these methods in parallel in worker threads.

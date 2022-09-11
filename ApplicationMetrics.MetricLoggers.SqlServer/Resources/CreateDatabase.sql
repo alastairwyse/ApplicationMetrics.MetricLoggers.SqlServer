@@ -1,8 +1,4 @@
 ﻿
--- TODO: Think about what are the right indices for instance tables
---   Should maybe be compound on eventtime and then category/metric
-
-
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- Create Database
