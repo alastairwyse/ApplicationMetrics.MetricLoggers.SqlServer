@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ApplicationMetrics" Version="5.0.0" />
+    <PackageReference Include="ApplicationMetrics" Version="5.1.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.0" />
     <PackageReference Include="StandardAbstraction" Version="1.1.0" />
   </ItemGroup>
