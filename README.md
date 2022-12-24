@@ -79,6 +79,12 @@ SqlServerMetricLogger accepts the following constructor parameters...
       Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  This parameter is ignored when the the SqlServerMetricLogger operates in <a href="https://github.com/alastairwyse/ApplicationMetrics#interleaved-interval-metrics">'interleaved'</a> mode.
     </td>
   </tr>
+  <tr>
+    <td valign="top">logger</td>
+    <td>
+      An optional instance of an <a href="https://github.com/alastairwyse/ApplicationLogging">ApplicationLogging</a> IApplicationLogger instance used to log statistical and performance information (see the 'Logging' section below).
+    </td>
+  </tr>
 </table>
 
 Retries are implemented using the [configurable retry logic](https://docs.microsoft.com/en-us/sql/connect/ado-net/configurable-retry-logic-sqlclient-introduction?view=sql-server-ver16) functionality in the Microsoft.Data.SqlClient library.
@@ -89,6 +95,17 @@ A view is available for each of the 4 different types of metrics (e.g. 'CountMet
 A sample of the contents of 'AllMetricInstancesView' appears below...
 
 ![AllMetricInstancesView contents example](http://alastairwyse.net/applicationmetrics/images/allmetricinstancesview-example.png)
+
+#### Logging
+
+Its possible that ApplicationMetrics and its client application could generate metrics more quickly than a SQL Server instance is able to consume them.  In these situations the number of metrics processed, and/or the time taken to process them (depending on the buffer processing strategy used) would continue to increase over time (and eventually lead to out of memory or timeout errors).  If an instance of IApplicationLogger is provided to the constructor, SqlServerMetricLogger will create log similar to the following...
+
+
+```
+Processed 61 metric events in 238 milliseconds.
+```
+
+...each time a set of buffered metrics are processed, allowing performance to be monitored and the aforementioned situations avoided.
 
 #### Links
 The documentation below was written for version 1.* of ApplicationMetrics.  Minor implementation details may have changed in versions 2.0.0 and above, however the basic principles and use cases documented are still valid.  Note also that this documentation demonstrates the older ['non-interleaved'](https://github.com/alastairwyse/ApplicationMetrics#interleaved-interval-metrics) method of logging interval metrics.
@@ -105,6 +122,12 @@ A detailed sample implementation...<br>
   <tr>
     <td><b>Version</b></td>
     <td><b>Changes</b></td>
+  </tr>
+  <tr>
+    <td valign="top">1.2.0</td>
+    <td>
+      Added logging of buffer processing time and metric count.
+    </td>
   </tr>
   <tr>
     <td valign="top">1.1.0</td>

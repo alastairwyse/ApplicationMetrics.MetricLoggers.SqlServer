@@ -50,6 +50,15 @@
         <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.workerThreadExceptions">
             <summary>Holds any exceptions which are thrown on worker threads.</summary>
         </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.processedEventCount">
+            <summary>Whether an exception occurred on one of the threads sending events to the the SQL Server database.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.processingStartTime">
+            <summary>Holds the time the calls to the Process*MetricEvents() methods started.</summary>
+        </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.logger">
+            <summary>The logger to use for performance statistics.</summary>
+        </member>
         <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.storedProcedureExecutor">
             <summary>Wraps calls to execute stored procedures so that they can be mocked in unit tests.</summary>
         </member>
@@ -64,7 +73,7 @@
             <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
             <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,StandardAbstraction.IDateTime,StandardAbstraction.IStopwatch,ApplicationMetrics.MetricLoggers.IGuidProvider,ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper)">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,ApplicationLogging.IApplicationLogger)">
             <summary>
             Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
             </summary>
@@ -74,6 +83,19 @@
             <param name="retryInterval">The time in seconds between operation retries.</param>
             <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
             <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+            <param name="logger">The logger to use for performance statistics.</param>
+        </member>
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,ApplicationLogging.IApplicationLogger,StandardAbstraction.IDateTime,StandardAbstraction.IStopwatch,ApplicationMetrics.MetricLoggers.IGuidProvider,ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper)">
+            <summary>
+            Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
+            </summary>
+            <param name="category">The category to log all metrics under.</param>
+            <param name="connectionString">The string to use to connect to the SQL Server database.</param>
+            <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
+            <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+            <param name="logger">The logger to use for performance statistics.</param>
             <param name="dateTime">A test (mock) <see cref="T:System.DateTime"/> object.</param>
             <param name="stopWatch">A test (mock) <see cref="T:StandardAbstraction.Stopwatch"/> object.</param>
             <param name="guidProvider">A test (mock) <see cref="T:ApplicationMetrics.MetricLoggers.IGuidProvider"/> object.</param>
@@ -188,6 +210,11 @@
             </summary>
             <param name="procedureName">The name of the stored procedure.</param>
             <param name="parameters">The parameters to pass to the stored procedure.</param>
+        </member>
+        <member name="T:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.NullLogger">
+            <summary>
+            Implementation of <see cref="T:ApplicationMetrics.IMetricLogger"/> which does not log.
+            </summary>
         </member>
     </members>
 </doc>

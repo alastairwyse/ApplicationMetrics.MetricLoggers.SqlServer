@@ -20,8 +20,9 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
-using StandardAbstraction;
 using Microsoft.Data.SqlClient;
+using StandardAbstraction;
+using ApplicationLogging;
 
 namespace ApplicationMetrics.MetricLoggers.SqlServer
 {
@@ -77,6 +78,12 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         protected CountdownEvent parallelProcessCompletedSignal;
         /// <summary>Holds any exceptions which are thrown on worker threads.</summary>
         protected ConcurrentQueue<Exception> workerThreadExceptions;
+        /// <summary>Whether an exception occurred on one of the threads sending events to the the SQL Server database.</summary>
+        protected volatile Int32 processedEventCount;
+        /// <summary>Holds the time the calls to the Process*MetricEvents() methods started.</summary>
+        protected System.DateTime processingStartTime;
+        /// <summary>The logger to use for performance statistics.</summary>
+        protected IApplicationLogger logger;
         /// <summary>Wraps calls to execute stored procedures so that they can be mocked in unit tests.</summary>
         protected IStoredProcedureExecutionWrapper storedProcedureExecutor;
 
@@ -104,16 +111,57 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="retryInterval">The time in seconds between operation retries.</param>
         /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
         /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+        /// <param name="logger">The logger to use for performance statistics.</param>
+        public SqlServerMetricLogger
+        (
+            String category, 
+            String connectionString, 
+            Int32 retryCount, 
+            Int32 retryInterval, 
+            IBufferProcessingStrategy bufferProcessingStrategy, 
+            bool intervalMetricChecking, 
+            IApplicationLogger logger
+        )
+            : base(bufferProcessingStrategy, intervalMetricChecking)
+        {
+            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval);
+            this.logger = logger;
+        }
+
+        /// <summary>
+        /// Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
+        /// </summary>
+        /// <param name="category">The category to log all metrics under.</param>
+        /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
+        /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
+        /// <param name="retryInterval">The time in seconds between operation retries.</param>
+        /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+        /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+        /// <param name="logger">The logger to use for performance statistics.</param>
         /// <param name="dateTime">A test (mock) <see cref="System.DateTime"/> object.</param>
         /// <param name="stopWatch">A test (mock) <see cref="Stopwatch"/> object.</param>
         /// <param name="guidProvider">A test (mock) <see cref="IGuidProvider"/> object.</param>
         /// <param name="storedProcedureExecutor">A test (mock) <see cref="IStoredProcedureExecutionWrapper"/> object.</param>
         /// <remarks>This constructor is included to facilitate unit testing.</remarks>
-        public SqlServerMetricLogger(String category, String connectionString, Int32 retryCount, Int32 retryInterval, IBufferProcessingStrategy bufferProcessingStrategy, bool intervalMetricChecking, IDateTime dateTime, IStopwatch stopWatch, IGuidProvider guidProvider, IStoredProcedureExecutionWrapper storedProcedureExecutor)
+        public SqlServerMetricLogger
+        (
+            String category, 
+            String connectionString, 
+            Int32 retryCount, 
+            Int32 retryInterval, 
+            IBufferProcessingStrategy bufferProcessingStrategy, 
+            bool intervalMetricChecking, 
+            IApplicationLogger logger, 
+            IDateTime dateTime, 
+            IStopwatch stopWatch, 
+            IGuidProvider guidProvider, 
+            IStoredProcedureExecutionWrapper storedProcedureExecutor
+        )
             : base(bufferProcessingStrategy, intervalMetricChecking, dateTime, stopWatch, guidProvider)
         {
             ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval);
             this.storedProcedureExecutor = storedProcedureExecutor;
+            this.logger = logger;
         }
 
         #region Base Class Abstract Method Implementations
@@ -129,6 +177,8 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                 throw new AggregateException("One or more exceptions occurred on worker threads whilst writing metrics to SQL Server.", workerThreadExceptions);
             }
             parallelProcessCompletedSignal.Reset();
+            processedEventCount = 0;
+            processingStartTime = GetStopWatchUtcNow();
             // Allow the other parallel calls to SQL Server on worker threads to start
             parallelProcessStartSignal.Set();
 
@@ -144,6 +194,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                         insertCountMetricsStoredProcedureName, 
                         countMetricsParameterName
                     );
+                    Interlocked.Add(ref processedEventCount, countMetricEvents.Count);
                 }
                 catch (Exception e)
                 {
@@ -185,6 +236,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                             insertAmountMetricsStoredProcedureName, 
                             amountMetricsParameterName
                         );
+                        Interlocked.Add(ref processedEventCount, amountMetricEvents.Count);
                     }
                 }
                 catch (Exception e)
@@ -227,6 +279,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                             insertStatusMetricsStoredProcedureName, 
                             statusMetricsParameterName
                         );
+                        Interlocked.Add(ref processedEventCount, statusMetricEvents.Count);
                     }
                 }
                 catch (Exception e)
@@ -298,6 +351,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                         CreateSqlParameterWithValue(intervalMetricsParameterName, SqlDbType.Structured, stagingTable),
                     };
                     storedProcedureExecutor.Execute(insertIntervalMetricsStoredProcedureName, parameters);
+                    Interlocked.Add(ref processedEventCount, intervalMetricEventsAndDurations.Count);
                 }
             }
             catch (Exception e)
@@ -309,6 +363,8 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
             finally
             {
                 parallelProcessCompletedSignal.Wait();
+                Int32 processingTime = Convert.ToInt32(Math.Round((base.GetStopWatchUtcNow() - processingStartTime).TotalMilliseconds));
+                logger.Log(this, LogLevel.Information, $"Processed {processedEventCount} metric events in {processingTime} milliseconds.");
                 parallelProcessStartSignal.Reset();
             }
         }
@@ -370,6 +426,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
             sqlRetryLogicOption.MaxTimeInterval = TimeSpan.FromSeconds(120);
             sqlRetryLogicOption.DeltaTime = TimeSpan.FromSeconds(retryInterval);
             sqlRetryLogicOption.TransientErrors = sqlServerTransientErrorNumbers;
+            logger = new NullLogger();
         }
 
         /// <summary>
@@ -561,6 +618,44 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
             public void Execute(String procedureName, IEnumerable<SqlParameter> parameters)
             {
                 executeAction.Invoke(procedureName, parameters);
+            }
+        }
+
+        /// <summary>
+        /// Implementation of <see cref="IMetricLogger"/> which does not log.
+        /// </summary>
+        class NullLogger : IApplicationLogger
+        {
+            public void Log(LogLevel level, string text)
+            {
+            }
+
+            public void Log(object source, LogLevel level, string text)
+            {
+            }
+
+            public void Log(int eventIdentifier, LogLevel level, string text)
+            {
+            }
+
+            public void Log(object source, int eventIdentifier, LogLevel level, string text)
+            {
+            }
+
+            public void Log(LogLevel level, string text, Exception sourceException)
+            {
+            }
+
+            public void Log(object source, LogLevel level, string text, Exception sourceException)
+            {
+            }
+
+            public void Log(int eventIdentifier, LogLevel level, string text, Exception sourceException)
+            {
+            }
+
+            public void Log(object source, int eventIdentifier, LogLevel level, string text, Exception sourceException)
+            {
             }
         }
 

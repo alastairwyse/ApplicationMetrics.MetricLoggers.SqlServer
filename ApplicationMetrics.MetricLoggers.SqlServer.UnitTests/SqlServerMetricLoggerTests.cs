@@ -21,11 +21,11 @@ using System.Globalization;
 using System.Data;
 using System.Threading;
 using Microsoft.Data.SqlClient;
+using StandardAbstraction;
+using ApplicationLogging;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using NSubstitute;
-using StandardAbstraction;
-using ApplicationMetrics.MetricLoggers.SqlServer;
 
 namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
 {
@@ -54,6 +54,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         private string testCategory;
         private string testConnectionString;
         private IBufferProcessingStrategy mockBufferProcessingStrategy;
+        private IApplicationLogger mockLogger;
         private IDateTime mockDateTimeProvider;
         private IStopwatch mockStopwatch;
         private IGuidProvider mockGuidProvider;
@@ -67,11 +68,12 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             testConnectionString = "Server=testServer; Database=testDB; User Id=userId; Password=password;";
 
             mockBufferProcessingStrategy = Substitute.For<IBufferProcessingStrategy>();
+            mockLogger = Substitute.For<IApplicationLogger>();
             mockDateTimeProvider = Substitute.For<IDateTime>();
             mockStopwatch = Substitute.For<IStopwatch>();
             mockGuidProvider = Substitute.For<IGuidProvider>();
             mockStoredProcedureExecutionWrapper = Substitute.For<IStoredProcedureExecutionWrapper>();
-            testSqlServerMetricLogger = new SqlServerMetricLoggerWithProtectedMembers(testCategory, testConnectionString, 5, 10, mockBufferProcessingStrategy, true, mockDateTimeProvider, mockStopwatch, mockGuidProvider, mockStoredProcedureExecutionWrapper);
+            testSqlServerMetricLogger = new SqlServerMetricLoggerWithProtectedMembers(testCategory, testConnectionString, 5, 10, mockBufferProcessingStrategy, true, mockLogger, mockDateTimeProvider, mockStopwatch, mockGuidProvider, mockStoredProcedureExecutionWrapper);
         }
 
         [TearDown]
@@ -173,6 +175,31 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         }
 
         [Test]
+        public void ProcessCountMetricEvents_ExceptionExecutingStoredProcedureLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            string mockExceptionMessage = "Mock SQL Server exception";
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            mockStoredProcedureExecutionWrapper.When(wrapper => wrapper.Execute(insertCountMetricsStoredProcedureName, Arg.Any<IEnumerable<SqlParameter>>())).Do(callInfo => { throw new Exception(mockExceptionMessage); });
+            testSqlServerMetricLogger.Start();
+
+            // The first call will catch the exception on a worker thread, on the second call it will be re-thrown on the main thread
+            SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, countMetricEventInstances, amountMetricEventInstances, statusMetricEventInstances, intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 11 metric events in 250 milliseconds.");
+        }
+
+        [Test]
         public void ProcessAmountMetricEvents_ExceptionExecutingStoredProcedure()
         {
             string mockExceptionMessage = "Mock SQL Server exception";
@@ -190,6 +217,31 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             var innerException = e.InnerExceptions[0];
             Assert.That(innerException.Message, Does.StartWith("An error occurred writing amount metrics to SQL Server."));
             Assert.That(innerException.InnerException.Message, Does.StartWith(mockExceptionMessage));
+        }
+
+        [Test]
+        public void ProcessAmountMetricEvents_ExceptionExecutingStoredProcedureLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            string mockExceptionMessage = "Mock SQL Server exception";
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            mockStoredProcedureExecutionWrapper.When(wrapper => wrapper.Execute(insertAmountMetricsStoredProcedureName, Arg.Any<IEnumerable<SqlParameter>>())).Do(callInfo => { throw new Exception(mockExceptionMessage); });
+            testSqlServerMetricLogger.Start();
+
+            // The first call will catch the exception on a worker thread, on the second call it will be re-thrown on the main thread
+            SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, countMetricEventInstances, amountMetricEventInstances, statusMetricEventInstances, intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 10 metric events in 250 milliseconds.");
         }
 
         [Test]
@@ -213,6 +265,31 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         }
 
         [Test]
+        public void ProcessStatusMetricEvents_ExceptionExecutingStoredProcedureLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            string mockExceptionMessage = "Mock SQL Server exception";
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            mockStoredProcedureExecutionWrapper.When(wrapper => wrapper.Execute(insertStatusMetricsStoredProcedureName, Arg.Any<IEnumerable<SqlParameter>>())).Do(callInfo => { throw new Exception(mockExceptionMessage); });
+            testSqlServerMetricLogger.Start();
+
+            // The first call will catch the exception on a worker thread, on the second call it will be re-thrown on the main thread
+            SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, countMetricEventInstances, amountMetricEventInstances, statusMetricEventInstances, intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 8 metric events in 250 milliseconds.");
+        }
+
+        [Test]
         public void ProcessIntervalMetricEvents_ExceptionExecutingStoredProcedure()
         {
             string mockExceptionMessage = "Mock SQL Server exception";
@@ -233,6 +310,31 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         }
 
         [Test]
+        public void ProcessIntervalMetricEvents_ExceptionExecutingStoredProcedureLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            string mockExceptionMessage = "Mock SQL Server exception";
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            mockStoredProcedureExecutionWrapper.When(wrapper => wrapper.Execute(insertIntervalMetricsStoredProcedureName, Arg.Any<IEnumerable<SqlParameter>>())).Do(callInfo => { throw new Exception(mockExceptionMessage); });
+            testSqlServerMetricLogger.Start();
+
+            // The first call will catch the exception on a worker thread, on the second call it will be re-thrown on the main thread
+            SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, countMetricEventInstances, amountMetricEventInstances, statusMetricEventInstances, intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 7 metric events in 250 milliseconds.");
+        }
+
+        [Test]
         public void DequeueAndProcessMetricEvents_ExceptionExecutingStoredProceduresOnAllProcessMethods()
         {
             // Tests that multiple exceptions occurring on worker threads are re-thrown as a cobined AggregateException 
@@ -248,6 +350,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             {
                 SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, null, null, null, null);
             });
+
             Assert.That(e.Message, Does.StartWith($"One or more exceptions occurred on worker threads whilst writing metrics to SQL Server."));
             Assert.AreEqual(4, e.InnerExceptions.Count);
             var allInnerExceptions = new List<Exception>(e.InnerExceptions);
@@ -287,6 +390,28 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         }
 
         [Test]
+        public void DequeueAndProcessMetricEvents_LoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            testSqlServerMetricLogger.Start();
+
+            SimulateDequeueAndProcessMetricEventsMethod(testSqlServerMetricLogger, countMetricEventInstances, amountMetricEventInstances, statusMetricEventInstances, intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 250 milliseconds.");
+        }
+
+        [Test]
         public void DequeueAndProcessMetricEvents_WorkerThreadsStartedInReverseOrder()
         {
             // Variables to capture the table-valued parameters passed to each of the stored procedures
@@ -319,6 +444,34 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
 
             AssertDequeueAndProcessMetricEventsSuccessTestStoredProcedureParameters(countMetricProcedureParameters, amountMetricProcedureParameters, statusMetricProcedureParameters, intervalMetricProcedureParameters);
+        }
+
+        [Test]
+        public void DequeueAndProcessMetricEvents_WorkerThreadsStartedInReverseOrderLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(500),
+                ConvertMilliseondsToTicks(750)
+            );
+            testSqlServerMetricLogger.Start();
+
+            testSqlServerMetricLogger.ProcessStatusMetricEvents(statusMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessAmountMetricEvents(amountMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessCountMetricEvents(countMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 250 milliseconds.");
         }
 
         [Test]
@@ -387,6 +540,79 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             AssertDequeueAndProcessMetricEventsSuccessTestStoredProcedureParameters(countMetricProcedureParameters, amountMetricProcedureParameters, statusMetricProcedureParameters, intervalMetricProcedureParameters);
         }
 
+        [Test]
+        public void DequeueAndProcessMetricEvents_WorkerThreadsStartedInRandomOrdersLoggingTest()
+        {
+            System.DateTime testStartTime = GenerateUtcDateTime("2022-12-23 21:00:00.000");
+            List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances;
+            List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances;
+            List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances;
+            List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances;
+            GenerateDequeueAndProcessMetricEventsLoggingTestParameters(out countMetricEventInstances, out amountMetricEventInstances, out statusMetricEventInstances, out intervalMetricEventInstances);
+            mockDateTimeProvider.UtcNow.Returns(testStartTime);
+            mockStopwatch.ElapsedTicks.Returns
+            (
+                ConvertMilliseondsToTicks(0),
+                ConvertMilliseondsToTicks(250),
+                ConvertMilliseondsToTicks(1000),
+                ConvertMilliseondsToTicks(1249),
+                ConvertMilliseondsToTicks(2000),
+                ConvertMilliseondsToTicks(2248),
+                ConvertMilliseondsToTicks(3000),
+                ConvertMilliseondsToTicks(3247)
+            );
+            testSqlServerMetricLogger.Start();
+
+            testSqlServerMetricLogger.ProcessCountMetricEvents(countMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessStatusMetricEvents(statusMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessAmountMetricEvents(amountMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 250 milliseconds.");
+
+
+            mockLogger.ClearReceivedCalls();
+
+            testSqlServerMetricLogger.ProcessAmountMetricEvents(amountMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessCountMetricEvents(countMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessStatusMetricEvents(statusMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 249 milliseconds.");
+
+
+            mockLogger.ClearReceivedCalls();
+
+            testSqlServerMetricLogger.ProcessAmountMetricEvents(amountMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessStatusMetricEvents(statusMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessCountMetricEvents(countMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 248 milliseconds.");
+
+
+            mockLogger.ClearReceivedCalls();
+
+            testSqlServerMetricLogger.ProcessStatusMetricEvents(statusMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessCountMetricEvents(countMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessAmountMetricEvents(amountMetricEventInstances);
+            Thread.Sleep(250);
+            testSqlServerMetricLogger.ProcessIntervalMetricEvents(intervalMetricEventInstances);
+
+            mockLogger.Received(1).Log(testSqlServerMetricLogger, LogLevel.Information, "Processed 12 metric events in 247 milliseconds.");
+        }
+
         #region Private/Protected Methods
 
         /// <summary>
@@ -452,6 +678,16 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         }
 
         /// <summary>
+        /// Converts the specified number of milliseonds to ticks.
+        /// </summary>
+        /// <param name="millisecondValue">The millisecond value to convert.</param>
+        /// <returns>The millisecond value in ticks.</returns>
+        private Int32 ConvertMilliseondsToTicks(Int32 millisecondValue)
+        {
+            return millisecondValue * 10000;
+        }
+
+        /// <summary>
         /// Sets up parameters for testing the DequeueAndProcessMetricEvents() method (via method SimulateDequeueAndProcessMetricEventsMethod() in this test class).
         /// </summary>
         private void GenerateDequeueAndProcessMetricEventsSuccessTestParameters
@@ -471,24 +707,61 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             };
             amountMetricEventInstances = new List<Tuple<AmountMetric, Int64, System.DateTime>>()
             {
-                 new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 1, GenerateUtcDateTime("2022-08-30 21:58:00.005")),
-                 new Tuple<AmountMetric, Int64, System.DateTime>(new MessageSize(), 2, GenerateUtcDateTime("2022-08-30 21:58:00.006")),
-                 new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 3, GenerateUtcDateTime("2022-08-30 21:58:00.007")),
-                 new Tuple<AmountMetric, Int64, System.DateTime>(new MessageSize(), 4, GenerateUtcDateTime("2022-08-30 21:58:00.008"))
+                new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 1, GenerateUtcDateTime("2022-08-30 21:58:00.005")),
+                new Tuple<AmountMetric, Int64, System.DateTime>(new MessageSize(), 2, GenerateUtcDateTime("2022-08-30 21:58:00.006")),
+                new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 3, GenerateUtcDateTime("2022-08-30 21:58:00.007")),
+                new Tuple<AmountMetric, Int64, System.DateTime>(new MessageSize(), 4, GenerateUtcDateTime("2022-08-30 21:58:00.008"))
             };
             statusMetricEventInstances = new List<Tuple<StatusMetric, Int64, System.DateTime>>()
             {
-                 new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 5, GenerateUtcDateTime("2022-08-30 21:58:00.009")),
-                 new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 6, GenerateUtcDateTime("2022-08-30 21:58:00.010")),
-                 new Tuple<StatusMetric, Int64, System.DateTime>(new ActiveWorkerThreads(), 7, GenerateUtcDateTime("2022-08-30 21:58:00.011")),
-                 new Tuple<StatusMetric, Int64, System.DateTime>(new ActiveWorkerThreads(), 8, GenerateUtcDateTime("2022-08-30 21:58:00.012"))
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 5, GenerateUtcDateTime("2022-08-30 21:58:00.009")),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 6, GenerateUtcDateTime("2022-08-30 21:58:00.010")),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new ActiveWorkerThreads(), 7, GenerateUtcDateTime("2022-08-30 21:58:00.011")),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new ActiveWorkerThreads(), 8, GenerateUtcDateTime("2022-08-30 21:58:00.012"))
             };
             intervalMetricEventInstances = new List<Tuple<IntervalMetric, Int64, System.DateTime>>()
             {
-                 new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 9, GenerateUtcDateTime("2022-08-30 21:58:00.013")),
-                 new Tuple<IntervalMetric, Int64, System.DateTime>(new MessageReceiveTime(), 10, GenerateUtcDateTime("2022-08-30 21:58:00.014")),
-                 new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 11, GenerateUtcDateTime("2022-08-30 21:58:00.015")),
-                 new Tuple<IntervalMetric, Int64, System.DateTime>(new MessageReceiveTime(), 12, GenerateUtcDateTime("2022-08-30 21:58:00.016")),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 9, GenerateUtcDateTime("2022-08-30 21:58:00.013")),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new MessageReceiveTime(), 10, GenerateUtcDateTime("2022-08-30 21:58:00.014")),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 11, GenerateUtcDateTime("2022-08-30 21:58:00.015")),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new MessageReceiveTime(), 12, GenerateUtcDateTime("2022-08-30 21:58:00.016")),
+            };
+        }
+
+        /// <summary>
+        /// Sets up parameters for testing logging in the DequeueAndProcessMetricEvents() method (via method SimulateDequeueAndProcessMetricEventsMethod() in this test class).
+        /// </summary>
+        private void GenerateDequeueAndProcessMetricEventsLoggingTestParameters
+        (
+            out List<Tuple<CountMetric, System.DateTime>> countMetricEventInstances,
+            out List<Tuple<AmountMetric, Int64, System.DateTime>> amountMetricEventInstances,
+            out List<Tuple<StatusMetric, Int64, System.DateTime>> statusMetricEventInstances,
+            out List<Tuple<IntervalMetric, Int64, System.DateTime>> intervalMetricEventInstances
+        )
+        {
+            countMetricEventInstances = new List<Tuple<CountMetric, System.DateTime>>()
+            {
+                new Tuple<CountMetric, System.DateTime>(new DiskReadOperation(), System.DateTime.UtcNow)
+            };
+            amountMetricEventInstances = new List<Tuple<AmountMetric, Int64, System.DateTime>>()
+            {
+                new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 1, System.DateTime.UtcNow),
+                new Tuple<AmountMetric, Int64, System.DateTime>(new DiskBytesRead(), 1, System.DateTime.UtcNow)
+            };
+            statusMetricEventInstances = new List<Tuple<StatusMetric, Int64, System.DateTime>>()
+            {
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 2, System.DateTime.UtcNow),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 2, System.DateTime.UtcNow),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 2, System.DateTime.UtcNow),
+                new Tuple<StatusMetric, Int64, System.DateTime>(new AvailableMemory(), 2, System.DateTime.UtcNow)
+            };
+            intervalMetricEventInstances = new List<Tuple<IntervalMetric, Int64, System.DateTime>>()
+            {
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 3, System.DateTime.UtcNow),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 3, System.DateTime.UtcNow),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 3, System.DateTime.UtcNow),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 3, System.DateTime.UtcNow),
+                new Tuple<IntervalMetric, Int64, System.DateTime>(new DiskReadTime(), 3, System.DateTime.UtcNow)
             };
         }
 
@@ -661,12 +934,13 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             /// <param name="retryInterval">The time in seconds between operation retries.</param>
             /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
             /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).</param>
+            /// <param name="logger">The logger to use for performance statistics.</param>
             /// <param name="dateTime">A test (mock) <see cref="System.DateTime"/> object.</param>
             /// <param name="stopWatch">A test (mock) <see cref="Stopwatch"/> object.</param>
             /// <param name="guidProvider">A test (mock) <see cref="IGuidProvider"/> object.</param>
             /// <param name="storedProcedureExecutor">A test (mock) <see cref="IStoredProcedureExecutionWrapper"/> object.</param>
-            public SqlServerMetricLoggerWithProtectedMembers(String category, String connectionString, Int32 retryCount, Int32 retryInterval, IBufferProcessingStrategy bufferProcessingStrategy, bool intervalMetricChecking, IDateTime dateTime, IStopwatch stopWatch, IGuidProvider guidProvider, IStoredProcedureExecutionWrapper storedProcedureExecutor)
-                : base(category, connectionString, retryCount, retryInterval, bufferProcessingStrategy, intervalMetricChecking, dateTime, stopWatch, guidProvider, storedProcedureExecutor)
+            public SqlServerMetricLoggerWithProtectedMembers(String category, String connectionString, Int32 retryCount, Int32 retryInterval, IBufferProcessingStrategy bufferProcessingStrategy, bool intervalMetricChecking, IApplicationLogger logger, IDateTime dateTime, IStopwatch stopWatch, IGuidProvider guidProvider, IStoredProcedureExecutionWrapper storedProcedureExecutor)
+                : base(category, connectionString, retryCount, retryInterval, bufferProcessingStrategy, intervalMetricChecking, logger, dateTime, stopWatch, guidProvider, storedProcedureExecutor)
             {
             }
 
