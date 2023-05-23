@@ -73,7 +73,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             mockStopwatch = Substitute.For<IStopwatch>();
             mockGuidProvider = Substitute.For<IGuidProvider>();
             mockStoredProcedureExecutionWrapper = Substitute.For<IStoredProcedureExecutionWrapper>();
-            testSqlServerMetricLogger = new SqlServerMetricLoggerWithProtectedMembers(testCategory, testConnectionString, 5, 10, mockBufferProcessingStrategy, true, mockLogger, mockDateTimeProvider, mockStopwatch, mockGuidProvider, mockStoredProcedureExecutionWrapper);
+            testSqlServerMetricLogger = new SqlServerMetricLoggerWithProtectedMembers(testCategory, testConnectionString, 5, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true, mockLogger, mockDateTimeProvider, mockStopwatch, mockGuidProvider, mockStoredProcedureExecutionWrapper);
         }
 
         [TearDown]
@@ -87,7 +87,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger(" ", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, 10, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger(" ", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'category' must contain a value."));
@@ -99,7 +99,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", " ", 5, 10, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", " ", 5, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'connectionString' must contain a value."));
@@ -111,7 +111,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentOutOfRangeException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", -1, 10, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", -1, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'retryCount' with value -1 cannot be less than 0."));
@@ -123,7 +123,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentOutOfRangeException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 60, 10, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 60, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'retryCount' with value 60 cannot be greater than 59."));
@@ -135,7 +135,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentOutOfRangeException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, -1, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, -1, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'retryInterval' with value -1 cannot be less than 0."));
@@ -147,11 +147,23 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
         {
             var e = Assert.Throws<ArgumentOutOfRangeException>(delegate
             {
-                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, 121, mockBufferProcessingStrategy, true);
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, 121, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
             });
 
             Assert.That(e.Message, Does.StartWith($"Parameter 'retryInterval' with value 121 cannot be greater than 120."));
             Assert.AreEqual("retryInterval", e.ParamName);
+        }
+
+        [Test]
+        public void Constructor_OperationTimeoutParameterLessThan0()
+        {
+            var e = Assert.Throws<ArgumentOutOfRangeException>(delegate
+            {
+                var testSqlServerMetricLogger = new SqlServerMetricLogger("TestCategory", "Server=testServer; Database=testDB; User Id=userId; Password=password;", 5, 10, -1, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true);
+            });
+
+            Assert.That(e.Message, Does.StartWith($"Parameter 'operationTimeout' with value -1 cannot be less than 0."));
+            Assert.AreEqual("operationTimeout", e.ParamName);
         }
 
         [Test]
@@ -932,15 +944,17 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
             /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
             /// <param name="retryInterval">The time in seconds between operation retries.</param>
+            /// <param name="operationTimeout">The timeout in seconds before terminating am operation against the SQL Server database.  A value of 0 indicates no limit.</param>
             /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            /// <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
             /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).</param>
             /// <param name="logger">The logger to use for performance statistics.</param>
             /// <param name="dateTime">A test (mock) <see cref="System.DateTime"/> object.</param>
             /// <param name="stopWatch">A test (mock) <see cref="Stopwatch"/> object.</param>
             /// <param name="guidProvider">A test (mock) <see cref="IGuidProvider"/> object.</param>
             /// <param name="storedProcedureExecutor">A test (mock) <see cref="IStoredProcedureExecutionWrapper"/> object.</param>
-            public SqlServerMetricLoggerWithProtectedMembers(String category, String connectionString, Int32 retryCount, Int32 retryInterval, IBufferProcessingStrategy bufferProcessingStrategy, bool intervalMetricChecking, IApplicationLogger logger, IDateTime dateTime, IStopwatch stopWatch, IGuidProvider guidProvider, IStoredProcedureExecutionWrapper storedProcedureExecutor)
-                : base(category, connectionString, retryCount, retryInterval, bufferProcessingStrategy, intervalMetricChecking, logger, dateTime, stopWatch, guidProvider, storedProcedureExecutor)
+            public SqlServerMetricLoggerWithProtectedMembers(String category, String connectionString, Int32 retryCount, Int32 retryInterval, Int32 operationTimeout, IBufferProcessingStrategy bufferProcessingStrategy, IntervalMetricBaseTimeUnit intervalMetricBaseTimeUnit, bool intervalMetricChecking, IApplicationLogger logger, IDateTime dateTime, IStopwatch stopWatch, IGuidProvider guidProvider, IStoredProcedureExecutionWrapper storedProcedureExecutor)
+                : base(category, connectionString, retryCount, retryInterval, operationTimeout, bufferProcessingStrategy, intervalMetricBaseTimeUnit, intervalMetricChecking, logger, dateTime, stopWatch, guidProvider, storedProcedureExecutor)
             {
             }
 

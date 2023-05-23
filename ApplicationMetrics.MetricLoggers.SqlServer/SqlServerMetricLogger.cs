@@ -66,6 +66,8 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         protected Int32 retryCount;
         /// <summary>The time in seconds between operation retries.</summary>
         protected Int32 retryInterval;
+        /// <summary>The timeout in seconds before terminating am operation against the SQL Server database.  A value of 0 indicates no limit.</summary>
+        protected Int32 operationTimeout;
         /// <summary>The retry logic to use when connecting to and executing against the SQL Server database.</summary>
         protected SqlRetryLogicOption sqlRetryLogicOption;
         /// <summary>A set of SQL Server database engine error numbers which denote a transient fault.</summary>
@@ -94,12 +96,15 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
         /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
         /// <param name="retryInterval">The time in seconds between operation retries.</param>
+        /// <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
         /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+        /// <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
         /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
-        public SqlServerMetricLogger(String category, String connectionString, Int32 retryCount, Int32 retryInterval, IBufferProcessingStrategy bufferProcessingStrategy, bool intervalMetricChecking)
-            : base(bufferProcessingStrategy, intervalMetricChecking)
+        /// <remarks>The class uses a <see cref="Stopwatch"/> to calculate and log interval metrics.  Since the smallest unit of time supported by Stopwatch is a tick (100 nanoseconds), the smallest level of granularity supported when constructor parameter 'intervalMetricBaseTimeUnit' is set to <see cref="IntervalMetricBaseTimeUnit.Nanosecond"/> is 100 nanoseconds.</remarks>
+        public SqlServerMetricLogger(String category, String connectionString, Int32 retryCount, Int32 retryInterval, Int32 operationTimeout, IBufferProcessingStrategy bufferProcessingStrategy, IntervalMetricBaseTimeUnit intervalMetricBaseTimeUnit, bool intervalMetricChecking)
+            : base(bufferProcessingStrategy, intervalMetricBaseTimeUnit, intervalMetricChecking)
         {
-            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval);
+            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval, operationTimeout);
         }
 
         /// <summary>
@@ -109,22 +114,27 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
         /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
         /// <param name="retryInterval">The time in seconds between operation retries.</param>
+        /// <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
         /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+        /// <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
         /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
         /// <param name="logger">The logger to use for performance statistics.</param>
+        /// <remarks>The class uses a <see cref="Stopwatch"/> to calculate and log interval metrics.  Since the smallest unit of time supported by Stopwatch is a tick (100 nanoseconds), the smallest level of granularity supported when constructor parameter 'intervalMetricBaseTimeUnit' is set to <see cref="IntervalMetricBaseTimeUnit.Nanosecond"/> is 100 nanoseconds.</remarks>
         public SqlServerMetricLogger
         (
             String category, 
             String connectionString, 
             Int32 retryCount, 
-            Int32 retryInterval, 
+            Int32 retryInterval,
+            Int32 operationTimeout,
             IBufferProcessingStrategy bufferProcessingStrategy, 
+            IntervalMetricBaseTimeUnit intervalMetricBaseTimeUnit,
             bool intervalMetricChecking, 
             IApplicationLogger logger
         )
-            : base(bufferProcessingStrategy, intervalMetricChecking)
+            : base(bufferProcessingStrategy, intervalMetricBaseTimeUnit, intervalMetricChecking)
         {
-            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval);
+            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval, operationTimeout);
             this.logger = logger;
         }
 
@@ -135,7 +145,9 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
         /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
         /// <param name="retryInterval">The time in seconds between operation retries.</param>
+        /// <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
         /// <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+        /// <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
         /// <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
         /// <param name="logger">The logger to use for performance statistics.</param>
         /// <param name="dateTime">A test (mock) <see cref="System.DateTime"/> object.</param>
@@ -148,8 +160,10 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
             String category, 
             String connectionString, 
             Int32 retryCount, 
-            Int32 retryInterval, 
-            IBufferProcessingStrategy bufferProcessingStrategy, 
+            Int32 retryInterval,
+            Int32 operationTimeout,
+            IBufferProcessingStrategy bufferProcessingStrategy,
+            IntervalMetricBaseTimeUnit intervalMetricBaseTimeUnit,
             bool intervalMetricChecking, 
             IApplicationLogger logger, 
             IDateTime dateTime, 
@@ -157,9 +171,9 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
             IGuidProvider guidProvider, 
             IStoredProcedureExecutionWrapper storedProcedureExecutor
         )
-            : base(bufferProcessingStrategy, intervalMetricChecking, dateTime, stopWatch, guidProvider)
+            : base(bufferProcessingStrategy, intervalMetricBaseTimeUnit, intervalMetricChecking, dateTime, stopWatch, guidProvider)
         {
-            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval);
+            ValidateAndInitialiseConstructorParameters(category, connectionString, retryCount, retryInterval, operationTimeout);
             this.storedProcedureExecutor = storedProcedureExecutor;
             this.logger = logger;
         }
@@ -298,7 +312,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <summary>
         /// Writes logged interval metric events to SQL Server.
         /// </summary>
-        /// <param name="intervalMetricEventsAndDurations">The interval metric events and corresponding durations of the events (in milliseconds) to process.</param>
+        /// <param name="intervalMetricEventsAndDurations">The interval metric events and corresponding durations of the events (in the specified base time unit) to process.</param>
         protected override void ProcessIntervalMetricEvents(Queue<Tuple<IntervalMetricEventInstance, Int64>> intervalMetricEventsAndDurations)
         {
             // Wait for the 'first' Process*MetricEvents() to reset the complete signal
@@ -395,7 +409,8 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
         /// <param name="connectionString">The string to use to connect to the SQL Server database.</param>
         /// <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
         /// <param name="retryInterval">The time in seconds between operation retries.</param>
-        protected void ValidateAndInitialiseConstructorParameters(String category, String connectionString, Int32 retryCount, Int32 retryInterval)
+        /// <param name="operationTimeout">The timeout in seconds before terminating am operation against the SQL Server database.</param>
+        protected void ValidateAndInitialiseConstructorParameters(String category, String connectionString, Int32 retryCount, Int32 retryInterval, Int32 operationTimeout)
         {
             if (String.IsNullOrWhiteSpace(category) == true)
                 throw new ArgumentException($"Parameter '{nameof(category)}' must contain a value.", nameof(category));
@@ -409,11 +424,14 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                 throw new ArgumentOutOfRangeException(nameof(retryInterval), $"Parameter '{nameof(retryInterval)}' with value {retryInterval} cannot be less than 0.");
             if (retryInterval > 120)
                 throw new ArgumentOutOfRangeException(nameof(retryInterval), $"Parameter '{nameof(retryInterval)}' with value {retryInterval} cannot be greater than 120.");
+            if (operationTimeout < 0)
+                throw new ArgumentOutOfRangeException(nameof(operationTimeout), $"Parameter '{nameof(operationTimeout)}' with value {operationTimeout} cannot be less than 0.");
 
             this.category = category;
             this.connectionString = connectionString;
             this.retryCount = retryCount;
             this.retryInterval = retryInterval;
+            this.operationTimeout = operationTimeout;
             parallelProcessStartSignal = new ManualResetEvent(false);
             parallelProcessCompletedSignal = new CountdownEvent(3);
             workerThreadExceptions = new ConcurrentQueue<Exception>();
@@ -527,7 +545,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer
                     connection.RetryLogicProvider = SqlConfigurableRetryFactory.CreateFixedRetryProvider(sqlRetryLogicOption);
                     connection.Open();
                     command.Connection = connection;
-                    command.CommandTimeout = retryInterval * retryCount;
+                    command.CommandTimeout = operationTimeout;
                     command.ExecuteNonQuery();
                 }
             }

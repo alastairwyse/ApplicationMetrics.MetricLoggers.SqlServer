@@ -5,8 +5,10 @@ An implementation of an [ApplicationMetrics](https://github.com/alastairwyse/App
 
 #### Setup
 
-##### 1) Create the Database and Objects
-Run the [CreateDatabase.sql](https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/blob/master/ApplicationMetrics.MetricLoggers.SqlServer/Resources/CreateDatabase.sql) script against a SQL Server instance to create the 'ApplicationMetrics' database and objects to store the metrics.  The 'CREATE DATABASE' statement needs to be run separately, before the remainder of the script.  The name of the database can be changed via a find/replace operation on the script (replacing all instances of 'ApplicationMetrics' with a desired database name).  Alternatively, the objects can be created in an existing database.  In any case, the 'InitialCatalog' component of the connection string passed to the SqlServerMetricLogger class should be set to the matching database name.
+##### 1) Create/Update the Database and Objects
+For new installations, run the [CreateDatabase.sql](https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/blob/master/ApplicationMetrics.MetricLoggers.SqlServer/Resources/CreateDatabase.sql) script against a SQL Server instance to create the 'ApplicationMetrics' database and objects to store the metrics.  The 'CREATE DATABASE' statement needs to be run separately, before the remainder of the script.  The name of the database can be changed via a find/replace operation on the script (replacing all instances of 'ApplicationMetrics' with a desired database name).  Alternatively, the objects can be created in an existing database.  In any case, the 'InitialCatalog' component of the connection string passed to the SqlServerMetricLogger class should be set to the matching database name.  
+
+For existing installations, the database schema can be upgraded to the latest version by running the [UpdateDatabase.sql]()(https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/blob/master/ApplicationMetrics.MetricLoggers.SqlServer/Resources/UpdateDatabase.sql) script against the existing 'ApplicationMetrics' database.
 
 ##### 2) Setup and Call the SqlServerMetricLogger Class
 
@@ -22,7 +24,7 @@ connStringBuilder.UserID = "sa";
 connStringBuilder.Password = "password";
 
 using (var bufferProcessor = new SizeLimitedBufferProcessor(5))
-using (var metricLogger = new SqlServerMetricLogger("DefaultCategory", connStringBuilder.ToString(), 20, 10, bufferProcessor, true))
+using (var metricLogger = new SqlServerMetricLogger("DefaultCategory", connStringBuilder.ToString(), 20, 10, 0, bufferProcessor, IntervalMetricBaseTimeUnit.Millisecond, true))
 {
     metricLogger.Start();
 
@@ -68,9 +70,21 @@ SqlServerMetricLogger accepts the following constructor parameters...
     </td>
   </tr>
   <tr>
+    <td valign="top">operationTimeout</td>
+    <td>
+      The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.
+    </td>
+  </tr>
+  <tr>
     <td valign="top">bufferProcessingStrategy</td>
     <td>
       An object implementing <a href="https://github.com/alastairwyse/ApplicationMetrics/blob/master/ApplicationMetrics.MetricLoggers/IBufferProcessingStrategy.cs">IBufferProcessingStrategy</a> which decides when the buffers holding logged metric events should be flushed (and be written to SQL Server).
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">intervalMetricBaseTimeUnit</td>
+    <td>
+      The base time unit to use to log interval metrics.
     </td>
   </tr>
   <tr>
@@ -102,7 +116,7 @@ Its possible that ApplicationMetrics and its client application could generate m
 
 
 ```
-Processed 61 metric events in 238 milliseconds.
+Processed 550 metric events in 123 milliseconds.
 ```
 
 ...each time a set of buffered metrics are processed, allowing performance to be monitored and the aforementioned situations avoided.
@@ -110,10 +124,10 @@ Processed 61 metric events in 238 milliseconds.
 #### Links
 The documentation below was written for version 1.* of ApplicationMetrics.  Minor implementation details may have changed in versions 2.0.0 and above, however the basic principles and use cases documented are still valid.  Note also that this documentation demonstrates the older ['non-interleaved'](https://github.com/alastairwyse/ApplicationMetrics#interleaved-interval-metrics) method of logging interval metrics.
 
-Full documentation for the project...<br>
+Full documentation for the project...<br />
 [http://www.alastairwyse.net/methodinvocationremoting/application-metrics.html](http://www.alastairwyse.net/methodinvocationremoting/application-metrics.html)
 
-A detailed sample implementation...<br>
+A detailed sample implementation...<br />
 [http://www.alastairwyse.net/methodinvocationremoting/sample-application-5.html](http://www.alastairwyse.net/methodinvocationremoting/sample-application-5.html)
 
 #### Release History
@@ -122,6 +136,15 @@ A detailed sample implementation...<br>
   <tr>
     <td><b>Version</b></td>
     <td><b>Changes</b></td>
+  </tr>
+  <tr>
+    <td valign="top">2.0.0</td>
+    <td>
+      Updated for compatibility with ApplicationMetrics version 6.0.0.<br />
+      Allow specifying the SQL <a href="https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlcommand.commandtimeout?redirectedfrom=MSDN&view=dotnet-plat-ext-7.0#System_Data_SqlClient_SqlCommand_CommandTimeout">command timeout</a> property via the 'operationTimeout' constructor parameter.<br />
+      Concurrency fix to Insert*Metrics stored procedures, to resolve 'cannot insert the value NULL into column' and 'transaction has been chosen as the deadlock victim' errors when inserting new categories or metric instances for the first time.<br />
+      Added unique index to 'Name' columns in *Metrics tables.
+    </td>
   </tr>
   <tr>
     <td valign="top">1.2.0</td>

@@ -33,6 +33,9 @@
         <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.retryInterval">
             <summary>The time in seconds between operation retries.</summary>
         </member>
+        <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.operationTimeout">
+            <summary>The timeout in seconds before terminating am operation against the SQL Server database.  A value of 0 indicates no limit.</summary>
+        </member>
         <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.sqlRetryLogicOption">
             <summary>The retry logic to use when connecting to and executing against the SQL Server database.</summary>
         </member>
@@ -62,7 +65,7 @@
         <member name="F:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.storedProcedureExecutor">
             <summary>Wraps calls to execute stored procedures so that they can be mocked in unit tests.</summary>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean)">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,ApplicationMetrics.MetricLoggers.IntervalMetricBaseTimeUnit,System.Boolean)">
             <summary>
             Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
             </summary>
@@ -70,10 +73,13 @@
             <param name="connectionString">The string to use to connect to the SQL Server database.</param>
             <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
             <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
             <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
             <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
+            <remarks>The class uses a <see cref="T:StandardAbstraction.Stopwatch"/> to calculate and log interval metrics.  Since the smallest unit of time supported by Stopwatch is a tick (100 nanoseconds), the smallest level of granularity supported when constructor parameter 'intervalMetricBaseTimeUnit' is set to <see cref="F:ApplicationMetrics.MetricLoggers.IntervalMetricBaseTimeUnit.Nanosecond"/> is 100 nanoseconds.</remarks>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,ApplicationLogging.IApplicationLogger)">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,ApplicationMetrics.MetricLoggers.IntervalMetricBaseTimeUnit,System.Boolean,ApplicationLogging.IApplicationLogger)">
             <summary>
             Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
             </summary>
@@ -81,11 +87,14 @@
             <param name="connectionString">The string to use to connect to the SQL Server database.</param>
             <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
             <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
             <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
             <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
             <param name="logger">The logger to use for performance statistics.</param>
+            <remarks>The class uses a <see cref="T:StandardAbstraction.Stopwatch"/> to calculate and log interval metrics.  Since the smallest unit of time supported by Stopwatch is a tick (100 nanoseconds), the smallest level of granularity supported when constructor parameter 'intervalMetricBaseTimeUnit' is set to <see cref="F:ApplicationMetrics.MetricLoggers.IntervalMetricBaseTimeUnit.Nanosecond"/> is 100 nanoseconds.</remarks>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,System.Boolean,ApplicationLogging.IApplicationLogger,StandardAbstraction.IDateTime,StandardAbstraction.IStopwatch,ApplicationMetrics.MetricLoggers.IGuidProvider,ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper)">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,ApplicationMetrics.MetricLoggers.IBufferProcessingStrategy,ApplicationMetrics.MetricLoggers.IntervalMetricBaseTimeUnit,System.Boolean,ApplicationLogging.IApplicationLogger,StandardAbstraction.IDateTime,StandardAbstraction.IStopwatch,ApplicationMetrics.MetricLoggers.IGuidProvider,ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper)">
             <summary>
             Initialises a new instance of the ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger class.
             </summary>
@@ -93,7 +102,9 @@
             <param name="connectionString">The string to use to connect to the SQL Server database.</param>
             <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
             <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="operationTimeout">The timeout in seconds before terminating an operation against the SQL Server database.  A value of 0 indicates no limit.</param>
             <param name="bufferProcessingStrategy">Object which implements a processing strategy for the buffers (queues).</param>
+            <param name="intervalMetricBaseTimeUnit">The base time unit to use to log interval metrics.</param>
             <param name="intervalMetricChecking">Specifies whether an exception should be thrown if the correct order of interval metric logging is not followed (e.g. End() method called before Begin()).  Note that this parameter only has an effect when running in 'non-interleaved' mode.</param>
             <param name="logger">The logger to use for performance statistics.</param>
             <param name="dateTime">A test (mock) <see cref="T:System.DateTime"/> object.</param>
@@ -124,7 +135,7 @@
             <summary>
             Writes logged interval metric events to SQL Server.
             </summary>
-            <param name="intervalMetricEventsAndDurations">The interval metric events and corresponding durations of the events (in milliseconds) to process.</param>
+            <param name="intervalMetricEventsAndDurations">The interval metric events and corresponding durations of the events (in the specified base time unit) to process.</param>
         </member>
         <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.GenerateSqlServerTransientErrorNumbers">
             <summary>
@@ -133,7 +144,7 @@
             <returns>The list of SQL Server error numbers.</returns>
             <remarks>See <see href="https://docs.microsoft.com/en-us/azure/azure-sql/database/troubleshoot-common-errors-issues?view=azuresql">Troubleshooting connectivity issues and other errors with Azure SQL Database and Azure SQL Managed Instance</see></remarks> 
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ValidateAndInitialiseConstructorParameters(System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ValidateAndInitialiseConstructorParameters(System.String,System.String,System.Int32,System.Int32,System.Int32)">
             <summary>
             Common method to validate and set/initialise parameters passed to the constructor.
             </summary>
@@ -141,6 +152,7 @@
             <param name="connectionString">The string to use to connect to the SQL Server database.</param>
             <param name="retryCount">The number of times an operation against the SQL Server database should be retried in the case of execution failure.</param>
             <param name="retryInterval">The time in seconds between operation retries.</param>
+            <param name="operationTimeout">The timeout in seconds before terminating am operation against the SQL Server database.</param>
         </member>
         <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.CreateAndPopulateStagingTableAndCallStoredProcedure``2(System.Collections.Generic.Queue{``0},System.Data.DataColumn,System.Action{System.Data.DataRow,``0},System.String,System.String)">
             <summary>

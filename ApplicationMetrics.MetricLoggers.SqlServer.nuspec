@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>ApplicationMetrics.MetricLoggers.SqlServer</id>
-    <version>1.2.1</version>
+    <version>2.0.0</version>
     <authors>Alastair Wyse</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">Apache-2.0</license>
@@ -10,15 +10,19 @@
     <projectUrl>https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/</projectUrl>
     <description>An ApplicationMetrics metric logger which writes metric and instrumentation events to a Microsoft SQL Server database.</description>
     <summary>An ApplicationMetrics metric logger which writes metric and instrumentation events to a Microsoft SQL Server database</summary>
-    <releaseNotes>Added logging of buffer processing time and metric count. </releaseNotes>
-    <copyright>Copyright © Alastair Wyse 2022</copyright>
+    <releaseNotes>Updated for compatibility with ApplicationMetrics version 6.0.0.
+Allow specifying the SQL command timeout property via the 'operationTimeout' constructor parameter.
+Concurrency fix to Insert*Metrics stored procedures, to resolve 'cannot insert the value NULL into column' and 'transaction has been chosen as the deadlock victim' errors when inserting new categories or metric instances for the first time.
+Added unique index to 'Name' columns in *Metrics tables.</releaseNotes>
+    <copyright>Copyright © Alastair Wyse 2023</copyright>
     <tags>metric metrics instrumentation client application counter statistics microsoft sql server</tags>
     <icon>images\ApplicationMetrics.png</icon>
     <repository type="git" url="https://github.com/alastairwyse/ApplicationMetrics.MetricLoggers.SqlServer/" />
     <dependencies>
       <group targetFramework=".NETStandard2.0">
-        <dependency id="ApplicationMetrics" version="5.1.0" exclude="Build,Analyzers" />
-        <dependency id="Microsoft.Data.SqlClient" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="ApplicationLogging" version="2.0.0" exclude="Build,Analyzers" />
+        <dependency id="ApplicationMetrics" version="6.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Data.SqlClient" version="5.1.1" exclude="Build,Analyzers" />
         <dependency id="StandardAbstraction" version="1.1.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
