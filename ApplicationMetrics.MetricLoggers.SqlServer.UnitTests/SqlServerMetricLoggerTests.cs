@@ -71,6 +71,7 @@ namespace ApplicationMetrics.MetricLoggers.SqlServer.UnitTests
             mockLogger = Substitute.For<IApplicationLogger>();
             mockDateTimeProvider = Substitute.For<IDateTime>();
             mockStopwatch = Substitute.For<IStopwatch>();
+            mockStopwatch.Frequency.Returns<Int64>(10000000);
             mockGuidProvider = Substitute.For<IGuidProvider>();
             mockStoredProcedureExecutionWrapper = Substitute.For<IStoredProcedureExecutionWrapper>();
             testSqlServerMetricLogger = new SqlServerMetricLoggerWithProtectedMembers(testCategory, testConnectionString, 5, 10, 60, mockBufferProcessingStrategy, IntervalMetricBaseTimeUnit.Millisecond, true, mockLogger, mockDateTimeProvider, mockStopwatch, mockGuidProvider, mockStoredProcedureExecutionWrapper);
