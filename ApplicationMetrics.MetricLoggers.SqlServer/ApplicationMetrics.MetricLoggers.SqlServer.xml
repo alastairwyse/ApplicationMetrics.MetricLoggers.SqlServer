@@ -113,25 +113,25 @@
             <param name="storedProcedureExecutor">A test (mock) <see cref="T:ApplicationMetrics.MetricLoggers.SqlServer.IStoredProcedureExecutionWrapper"/> object.</param>
             <remarks>This constructor is included to facilitate unit testing.</remarks>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessCountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.CountMetricEventInstance})">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessCountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBase.CountMetricEventInstance})">
             <summary>
             Writes logged count metric events to SQL Server.
             </summary>
             <param name="countMetricEvents">The count metric events to process.</param>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessAmountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.AmountMetricEventInstance})">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessAmountMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBase.AmountMetricEventInstance})">
             <summary>
             Writes logged amount metric events to SQL Server.
             </summary>
             <param name="amountMetricEvents">The amount metric events to process.</param>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessStatusMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.StatusMetricEventInstance})">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessStatusMetricEvents(System.Collections.Generic.Queue{ApplicationMetrics.MetricLoggers.MetricLoggerBase.StatusMetricEventInstance})">
             <summary>
             Writes logged status metric events to SQL Server.
             </summary>
             <param name="statusMetricEvents">The status metric events to process.</param>
         </member>
-        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessIntervalMetricEvents(System.Collections.Generic.Queue{System.Tuple{ApplicationMetrics.MetricLoggers.MetricLoggerBuffer.IntervalMetricEventInstance,System.Int64}})">
+        <member name="M:ApplicationMetrics.MetricLoggers.SqlServer.SqlServerMetricLogger.ProcessIntervalMetricEvents(System.Collections.Generic.Queue{System.Tuple{ApplicationMetrics.MetricLoggers.MetricLoggerBase.IntervalMetricEventInstance,System.Int64}})">
             <summary>
             Writes logged interval metric events to SQL Server.
             </summary>
