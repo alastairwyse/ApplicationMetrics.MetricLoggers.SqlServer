@@ -5,7 +5,7 @@
     <Authors>Alastair Wyse</Authors>
     <Company />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.5.0</Version>
+    <Version>2.6.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="ApplicationLogging" Version="2.0.0" />
-    <PackageReference Include="ApplicationMetrics" Version="6.4.1" />
+    <PackageReference Include="ApplicationMetrics" Version="7.0.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="StandardAbstraction" Version="1.2.0" />
   </ItemGroup>
